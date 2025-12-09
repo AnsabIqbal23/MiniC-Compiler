@@ -2,21 +2,27 @@
 from typing import Dict, Any
 from MiniC.ast_nodes import *
 class SemanticError(Exception):
+    """Exception raised for semantic analysis errors in the MiniC compiler."""
     pass
 
 class Symbol:
+    """Represents a symbol in the symbol table with name, type, and kind."""
     def __init__(self, name, typ, kind='var'):
+        """Initialize a symbol with name, type, and kind (default 'var')."""
         self.name = name
         self.typ = typ
         self.kind = kind
 
 class SemanticAnalyzer:
+    """Performs semantic analysis on the MiniC program AST."""
     def __init__(self, program: Program):
+        """Initialize the semantic analyzer with the program AST."""
         self.program = program
         self.globals: Dict[str, Symbol] = {}
         self.functions: Dict[str, Function] = {}
 
     def analyze(self):
+        """Analyze the entire program for semantic errors."""
         for f in self.program.functions:
             if f.name in self.functions:
                 raise SemanticError(f"Duplicate function {f.name}")
@@ -27,16 +33,19 @@ class SemanticAnalyzer:
             self.analyze_function(func)
 
     def analyze_function(self, func: Function):
+        """Analyze a single function for semantic errors."""
         symtab: Dict[str, Symbol] = {}
         for typ, name in func.params:
             symtab[name] = Symbol(name, typ, 'var')
         self.walk_block(func.body, symtab, func.ret_type)
 
     def walk_block(self, block: Block, symtab: Dict[str, Symbol], ret_type: str):
+        """Walk through the statements in a block."""
         for stmt in block.statements:
             self.walk_stmt(stmt, symtab, ret_type)
 
     def walk_stmt(self, stmt, symtab, ret_type):
+        """Walk through a statement and perform semantic checks."""
         if isinstance(stmt, VarDecl):
             if stmt.name in symtab:
                 raise SemanticError(f"Variable {stmt.name} already declared")
@@ -102,6 +111,7 @@ class SemanticAnalyzer:
             raise SemanticError(f"Unhandled statement in semantic analyzer: {stmt}")
 
     def eval_expr_type(self, expr, symtab) -> str:
+        """Evaluate the type of an expression."""
         if isinstance(expr, Literal):
             return expr.typ
         if isinstance(expr, VarRef):
@@ -150,6 +160,7 @@ class SemanticAnalyzer:
         raise SemanticError(f"Unable to determine expression type for {expr}")
 
     def type_compatible(self, dest: str, src: str) -> bool:
+        """Check if source type is compatible with destination type."""
         if dest == src:
             return True
         if dest == 'float' and src == 'int':

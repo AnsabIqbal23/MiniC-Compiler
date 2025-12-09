@@ -3,10 +3,12 @@ from dataclasses import dataclass
 from typing import List, Optional, Any, Tuple
 
 class ASTNode:
+    """Base class for all AST nodes."""
     pass
 
 @dataclass
 class Program(ASTNode):
+    """Represents the entire MiniC program with a list of functions."""
     functions: List[Any]
 
     def __str__(self):
@@ -14,6 +16,7 @@ class Program(ASTNode):
 
 @dataclass
 class Function(ASTNode):
+    """Represents a function definition with return type, name, parameters, and body."""
     ret_type: str
     name: str
     params: List[Tuple[str, str]]
@@ -25,6 +28,7 @@ class Function(ASTNode):
 
 @dataclass
 class Block(ASTNode):
+    """Represents a block of statements."""
     statements: List[Any]
 
     def __str__(self):
@@ -32,6 +36,7 @@ class Block(ASTNode):
 
 @dataclass
 class VarDecl(ASTNode):
+    """Represents a variable declaration with optional initialization."""
     var_type: str
     name: str
     init: Optional[Any]
@@ -42,6 +47,7 @@ class VarDecl(ASTNode):
 
 @dataclass
 class Assignment(ASTNode):
+    """Represents an assignment statement."""
     target: str
     value: Any
 
@@ -50,6 +56,7 @@ class Assignment(ASTNode):
 
 @dataclass
 class IfStmt(ASTNode):
+    """Represents an if statement with optional else branch."""
     cond: Any
     then_branch: Any
     else_branch: Optional[Any]
@@ -60,6 +67,7 @@ class IfStmt(ASTNode):
 
 @dataclass
 class WhileStmt(ASTNode):
+    """Represents a while loop."""
     cond: Any
     body: Any
 
@@ -68,6 +76,7 @@ class WhileStmt(ASTNode):
 
 @dataclass
 class ForStmt(ASTNode):
+    """Represents a for loop with optional init, condition, and update."""
     init: Optional[Any]
     cond: Optional[Any]
     update: Optional[Any]
@@ -81,6 +90,7 @@ class ForStmt(ASTNode):
 
 @dataclass
 class ReturnStmt(ASTNode):
+    """Represents a return statement with optional expression."""
     expr: Optional[Any]
 
     def __str__(self):
@@ -89,6 +99,7 @@ class ReturnStmt(ASTNode):
 
 @dataclass
 class Expr(ASTNode):
+    """Represents a binary expression with operator and operands."""
     op: Optional[str]
     left: Any
     right: Any
@@ -98,6 +109,7 @@ class Expr(ASTNode):
 
 @dataclass
 class UnaryExpr(ASTNode):
+    """Represents a unary expression with operator and operand."""
     op: str
     expr: Any
 
@@ -106,6 +118,7 @@ class UnaryExpr(ASTNode):
 
 @dataclass
 class Literal(ASTNode):
+    """Represents a literal value with its type."""
     value: Any
     typ: str
 
@@ -114,6 +127,7 @@ class Literal(ASTNode):
 
 @dataclass
 class VarRef(ASTNode):
+    """Represents a variable reference."""
     name: str
 
     def __str__(self):
@@ -121,6 +135,7 @@ class VarRef(ASTNode):
 
 @dataclass
 class FuncCall(ASTNode):
+    """Represents a function call with name and arguments."""
     name: str
     args: List[Any]
 

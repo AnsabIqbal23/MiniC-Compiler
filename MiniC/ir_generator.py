@@ -182,5 +182,3 @@ class IRGenerator:
         temp = self.new_temp()
         self.instructions.append(TACInstruction('call', dest=temp, src2=call.name, src1=arg_temps))
         return temp
-    
-    

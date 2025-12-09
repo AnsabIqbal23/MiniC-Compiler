@@ -8,7 +8,9 @@ A simple compiler for MiniC, a subset of the C programming language, implemented
 - **Parsing**: Builds an Abstract Syntax Tree (AST) from tokens using recursive descent.
 - **Semantic Analysis**: Performs type checking and ensures semantic correctness.
 - **Intermediate Representation (IR)**: Generates Three-Address Code (TAC) for optimization and code generation.
+- **Optimization**: Applies various TAC optimizations including constant folding, propagation, common subexpression elimination, and dead code elimination.
 - **TAC Printing**: Outputs TAC in various formats (standard, quadruples, triples, postfix).
+- **Code Generation**: Generates pseudo-assembly code from optimized TAC.
 - **Interpretation**: Executes MiniC programs directly from the AST.
 - **Supported Constructs**:
   - Data types: `int`, `float`, `char`, `bool`, `void`
@@ -22,16 +24,21 @@ A simple compiler for MiniC, a subset of the C programming language, implemented
 
 ```
 MiniC-Compiler/
+├── main.py               # Main compiler driver with command-line interface
 ├── MiniC/
 │   ├── ast_nodes.py      # AST node definitions
 │   ├── lexer.py          # Lexical analyzer
 │   ├── parser.py         # Parser for MiniC grammar
 │   ├── semantic.py       # Semantic analyzer
 │   ├── ir_generator.py   # Intermediate representation generator
+│   ├── optimizer.py      # TAC optimizer
+│   ├── dag_generator.py  # DAG generator for CSE
 │   ├── tac_printer.py    # TAC output formatter
+│   ├── codegen.py        # Code generator for pseudo-assembly
 │   └── interpreter.py    # Interpreter for executing MiniC programs
-├── test1.mc to test5.mc  # Sample MiniC programs
+├── test1.mc to test6.mc  # Sample MiniC programs
 ├── firstCode.mc          # Additional test file
+├── Second.mc             # Another test file
 └── README.md             # This file
 ```
 
@@ -49,35 +56,35 @@ MiniC-Compiler/
 
 ## Usage
 
-### Running the Compiler
+### Command-Line Interface
+
+The compiler includes a command-line interface via `main.py`. You can compile and run MiniC files with various options:
+
+```bash
+python main.py test1.mc --tokens --ast --tac --optimized --codegen
+```
+
+Available flags:
+- `--tokens`: Print tokenized input
+- `--ast`: Print abstract syntax tree
+- `--symbol-table`: Print symbol table
+- `--tac`: Print three-address code
+- `--optimized`: Print optimized TAC
+- `--codegen`: Generate and print assembly code
+
+### Programmatic Usage
 
 The compiler can be used programmatically by importing the modules. Here's a basic example:
 
 ```python
-from MiniC.lexer import Lexer
-from MiniC.parser import Parser
-from MiniC.semantic import SemanticAnalyzer
-from MiniC.interpreter import Interpreter
+from main import compile_and_run
 
-# Read MiniC source code
+# Read and compile MiniC source code
 with open('test1.mc', 'r') as f:
     source = f.read()
 
-# Lexical analysis
-lexer = Lexer(source)
-tokens = lexer.tokenize()
-
-# Parsing
-parser = Parser(tokens)
-ast = parser.parse()
-
-# Semantic analysis
-analyzer = SemanticAnalyzer(ast)
-analyzer.analyze()
-
-# Interpretation
-interpreter = Interpreter()
-interpreter.interpret(ast)
+# Compile and run with flags
+result = compile_and_run(source, flags={'tac': True, 'optimized': True})
 ```
 
 ### Generating TAC
@@ -85,12 +92,27 @@ interpreter.interpret(ast)
 To generate and print Three-Address Code:
 
 ```python
+from MiniC.lexer import tokenize
+from MiniC.parser import Parser
+from MiniC.semantic import SemanticAnalyzer
 from MiniC.ir_generator import IRGenerator
-from MiniC.tac_printer import print_tac
+from MiniC.optimizer import TACOptimizer
+from MiniC.tac_printer import TACPrinter
 
+# Process source to TAC
+toks = tokenize(source)
+p = Parser(toks)
+prog = p.parse()
+sa = SemanticAnalyzer(prog)
+sa.analyze()
 ir_gen = IRGenerator()
-tac_instructions = ir_gen.generate(ast)
-print(print_tac(tac_instructions, format_type='quadruples'))
+tac = ir_gen.generate(prog)
+optimizer = TACOptimizer(tac)
+optimized_tac = optimizer.optimize()
+
+# Print TAC
+printer = TACPrinter()
+print(printer.print_quadruples(optimized_tac))
 ```
 
 ## Examples
@@ -138,26 +160,18 @@ int main() {
 Run the provided test files to verify the compiler's functionality:
 
 ```bash
-python -c "
-from MiniC.lexer import Lexer
-from MiniC.parser import Parser
-from MiniC.semantic import SemanticAnalyzer
-from MiniC.interpreter import Interpreter
+# Test all sample files
+for file in test*.mc; do
+    echo "Testing $file:"
+    python main.py "$file"
+    echo
+done
+```
 
-for i in range(1, 6):
-    print(f'Testing test{i}.mc:')
-    with open(f'test{i}.mc', 'r') as f:
-        source = f.read()
-    lexer = Lexer(source)
-    tokens = lexer.tokenize()
-    parser = Parser(tokens)
-    ast = parser.parse()
-    analyzer = SemanticAnalyzer(ast)
-    analyzer.analyze()
-    interpreter = Interpreter()
-    interpreter.interpret(ast)
-    print()
-"
+Or test individual files with debugging flags:
+
+```bash
+python main.py test1.mc --tokens --ast --tac --optimized
 ```
 
 ## Contributing

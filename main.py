@@ -10,6 +10,7 @@ from MiniC.optimizer import TACOptimizer
 from MiniC.codegen import CodeGenerator
 
 def compile_and_run(code: str, flags=None, run=True, filename=None):
+    """Compile and optionally run MiniC code through all compiler phases."""
     if flags is None:
         flags = {}
     toks = tokenize(code)

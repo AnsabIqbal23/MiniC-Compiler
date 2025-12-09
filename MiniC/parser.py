@@ -5,22 +5,28 @@ from MiniC.ast_nodes import *
 from MiniC.lexer import tokenize
 
 class ParserError(Exception):
+    """Exception raised for parsing errors."""
     pass
 
 class Parser:
+    """Recursive descent parser for MiniC language."""
     def __init__(self, tokens: List[Token]):
+        """Initialize parser with token list."""
         self.tokens = tokens
         self.pos = 0
 
     def peek(self) -> Token:
+        """Peek at the current token without advancing."""
         return self.tokens[self.pos]
 
     def next(self) -> Token:
+        """Consume and return the current token."""
         tok = self.tokens[self.pos]
         self.pos += 1
         return tok
 
     def expect(self, typ: str, val: Optional[str]=None) -> Token:
+        """Expect a token of given type and optional value, consume it."""
         tok = self.peek()
         if tok.type != typ:
             raise ParserError(f"Expected {typ} at {tok.lineno}:{tok.col}, found {tok.type} ('{tok.value}')")
@@ -29,12 +35,14 @@ class Parser:
         return self.next()
 
     def parse(self) -> Program:
+        """Parse the entire program into an AST."""
         funcs = []
         while self.peek().type != 'EOF':
             funcs.append(self.parse_function())
         return Program(funcs)
 
     def parse_function(self) -> Function:
+        """Parse a function definition."""
         ret_tok = self.next()
         if ret_tok.type not in ('INT_KW','FLOAT_KW','CHAR_KW','BOOL_KW','VOID'):
             raise ParserError(f"Function must start with return type at {ret_tok.lineno}:{ret_tok.col}")
@@ -261,4 +269,3 @@ class Parser:
             self.expect('SYM',')')
             return expr
         raise ParserError(f"Unexpected token {tok.type} ('{tok.value}') at {tok.lineno}:{tok.col}")
-    

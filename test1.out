@@ -1,0 +1,4 @@
+main:
+PUSH c
+LOAD t7
+RET

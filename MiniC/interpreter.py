@@ -1,24 +1,62 @@
 # interpreter.py
+"""
+Interpreter module for the MiniC compiler.
+
+This module provides an interpreter to execute MiniC programs by evaluating
+the AST nodes.
+"""
+
 from typing import Dict, Any, List
 from MiniC.ast_nodes import *
 from MiniC.semantic import SemanticError
 
 class ReturnException(Exception):
+    """Exception raised when a return statement is executed."""
     def __init__(self, value):
         self.value = value
 
 class Interpreter:
+    """
+    Interpreter for executing MiniC programs.
+
+    Attributes:
+        program (Program): The AST of the program to interpret.
+        functions (Dict[str, Function]): Mapping of function names to Function nodes.
+    """
+
     def __init__(self, program: Program):
         self.program = program
         self.functions: Dict[str, Function] = {f.name: f for f in program.functions}
 
     def run(self, argv=None):
+        """
+        Run the program starting from the main function.
+
+        Args:
+            argv: Command line arguments (not used).
+
+        Returns:
+            The return value of the main function.
+
+        Raises:
+            Exception: If no main function is found.
+        """
         if 'main' not in self.functions:
             raise Exception('No main function')
         mainf = self.functions['main']
         return self.exec_function(mainf, [])
 
     def exec_function(self, func: Function, args: List[Any]):
+        """
+        Execute a function with given arguments.
+
+        Args:
+            func (Function): The function to execute.
+            args (List[Any]): Arguments to pass to the function.
+
+        Returns:
+            The return value of the function.
+        """
         env: Dict[str, Any] = {}
         for (typ,name), val in zip(func.params, args):
             env[name] = val
@@ -29,10 +67,24 @@ class Interpreter:
         return None
 
     def exec_block(self, block: Block, env: Dict[str, Any]):
+        """
+        Execute a block of statements.
+
+        Args:
+            block (Block): The block to execute.
+            env (Dict[str, Any]): The environment (variable bindings).
+        """
         for stmt in block.statements:
             self.exec_stmt(stmt, env)
 
     def exec_stmt(self, stmt, env):
+        """
+        Execute a single statement.
+
+        Args:
+            stmt: The statement to execute.
+            env (Dict[str, Any]): The environment.
+        """
         if isinstance(stmt, VarDecl):
             val = None
             if stmt.init is not None:
@@ -134,6 +186,16 @@ class Interpreter:
         raise Exception(f'Unhandled statement in interpreter: {stmt}')
 
     def eval_expr(self, expr, env):
+        """
+        Evaluate an expression.
+
+        Args:
+            expr: The expression to evaluate.
+            env (Dict[str, Any]): The environment.
+
+        Returns:
+            The value of the expression.
+        """
         if isinstance(expr, Literal):
             return expr.value
         if isinstance(expr, VarRef):

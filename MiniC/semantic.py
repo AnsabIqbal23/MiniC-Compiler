@@ -28,23 +28,30 @@ class SemanticAnalyzer:
 
     def analyze_function(self, func: Function):
         symtab: Dict[str, Symbol] = {}
+        current_scope = set()
         for typ, name in func.params:
             symtab[name] = Symbol(name, typ, 'var')
-        self.walk_block(func.body, symtab, func.ret_type)
+            current_scope.add(name)
+        self.walk_block(func.body, symtab, func.ret_type, current_scope)
 
-    def walk_block(self, block: Block, symtab: Dict[str, Symbol], ret_type: str):
+    def walk_block(self, block: Block, symtab: Dict[str, Symbol], ret_type: str, current_scope: set = None):
+        if current_scope is None:
+            current_scope = set()
         for stmt in block.statements:
-            self.walk_stmt(stmt, symtab, ret_type)
+            self.walk_stmt(stmt, symtab, ret_type, current_scope)
 
-    def walk_stmt(self, stmt, symtab, ret_type):
+    def walk_stmt(self, stmt, symtab, ret_type, current_scope: set = None):
+        if current_scope is None:
+            current_scope = set()
         if isinstance(stmt, VarDecl):
-            if stmt.name in symtab:
+            if stmt.name in current_scope:
                 raise SemanticError(f"Variable {stmt.name} already declared")
             if stmt.init is not None:
                 init_type = self.eval_expr_type(stmt.init, symtab)
                 if not self.type_compatible(stmt.var_type, init_type):
                     raise SemanticError(f"Type mismatch initializing {stmt.name}: {stmt.var_type} <- {init_type}")
             symtab[stmt.name] = Symbol(stmt.name, stmt.var_type)
+            current_scope.add(stmt.name)
 
         elif isinstance(stmt, Assignment):
             if stmt.target not in symtab:
@@ -58,26 +65,26 @@ class SemanticAnalyzer:
             condt = self.eval_expr_type(stmt.cond, symtab)
             if condt != 'bool':
                 raise SemanticError(f"Condition in if must be bool, got {condt}")
-            self.walk_stmt(stmt.then_branch, dict(symtab), ret_type) if isinstance(stmt.then_branch, Block) else self.walk_stmt(stmt.then_branch, symtab, ret_type)
+            self.walk_stmt(stmt.then_branch, dict(symtab), ret_type, set()) if isinstance(stmt.then_branch, Block) else self.walk_stmt(stmt.then_branch, symtab, ret_type, current_scope)
             if stmt.else_branch:
-                self.walk_stmt(stmt.else_branch, dict(symtab), ret_type) if isinstance(stmt.else_branch, Block) else self.walk_stmt(stmt.else_branch, symtab, ret_type)
+                self.walk_stmt(stmt.else_branch, dict(symtab), ret_type, set()) if isinstance(stmt.else_branch, Block) else self.walk_stmt(stmt.else_branch, symtab, ret_type, current_scope)
 
         elif isinstance(stmt, WhileStmt):
             condt = self.eval_expr_type(stmt.cond, symtab)
             if condt != 'bool':
                 raise SemanticError(f"Condition in while must be bool, got {condt}")
             # semantic checking of body (use copy to prevent accidental symbol leakage)
-            self.walk_stmt(stmt.body, dict(symtab), ret_type) if isinstance(stmt.body, Block) else self.walk_stmt(stmt.body, symtab, ret_type)
+            self.walk_stmt(stmt.body, dict(symtab), ret_type, set()) if isinstance(stmt.body, Block) else self.walk_stmt(stmt.body, symtab, ret_type, current_scope)
 
         elif isinstance(stmt, ForStmt):
             if stmt.init:
-                self.walk_stmt(stmt.init, symtab, ret_type) if not isinstance(stmt.init, VarDecl) else self.walk_stmt(stmt.init, symtab, ret_type)
+                self.walk_stmt(stmt.init, symtab, ret_type, current_scope) if not isinstance(stmt.init, VarDecl) else self.walk_stmt(stmt.init, symtab, ret_type, current_scope)
             if stmt.cond:
                 condt = self.eval_expr_type(stmt.cond, symtab)
                 if condt != 'bool':
                     raise SemanticError(f"Condition in for must be bool, got {condt}")
             if stmt.body:
-                self.walk_stmt(stmt.body, dict(symtab), ret_type) if isinstance(stmt.body, Block) else self.walk_stmt(stmt.body, symtab, ret_type)
+                self.walk_stmt(stmt.body, dict(symtab), ret_type, set()) if isinstance(stmt.body, Block) else self.walk_stmt(stmt.body, symtab, ret_type, current_scope)
 
         elif isinstance(stmt, ReturnStmt):
             if stmt.expr is None:
@@ -93,7 +100,7 @@ class SemanticAnalyzer:
                 raise SemanticError(f"Call to undefined function {stmt.name}")
 
         elif isinstance(stmt, Block):
-            self.walk_block(stmt, dict(symtab), ret_type)
+            self.walk_block(stmt, dict(symtab), ret_type, set())
 
         elif isinstance(stmt, (Expr, UnaryExpr, Literal, VarRef, FuncCall)):
             self.eval_expr_type(stmt, symtab)
